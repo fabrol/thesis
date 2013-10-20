@@ -1,0 +1,11 @@
+The Elogbeta is initialized / t0 so that we don't enter and then suddenly scale it
+We scale Elogtheta when we enter the E-step function
+Elogbeta is scaled at the end of teh update_lambda function
+
+I only ever scale the E's never the lambda
+
+
+If i use purely local scaling and don't change teh updates to Elogbeta in update_lambda, the program starts with high perplexity and then comes down quickly.
+
+
+With temp = 10, starts with perplex ~ 10. It goes up at the end. In the implementation with only local changes, it stays high and then dips at the end. They both seem to go the about the same place at the end.
