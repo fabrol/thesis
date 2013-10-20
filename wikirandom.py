@@ -108,6 +108,9 @@ def get_random_wikipedia_articles(n):
             wtlist[len(wtlist)-1].start()
         for j in range(i, min(i+maxthreads, n)):
             wtlist[j].join()
+    print WikiThread.articles
+    print 
+    print WikiThread.articlenames
     return (WikiThread.articles, WikiThread.articlenames)
 
 if __name__ == '__main__':

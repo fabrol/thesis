@@ -86,7 +86,7 @@ class OnlineLDA:
     Implements online VB for LDA as described in (Hoffman et al. 2010).
     """
 
-    def __init__(self, vocab, K, D, alpha, eta, tau0, kappa):
+    def __init__(self, vocab, K, D, alpha, eta, tau0, kappa, t0):
         """
         Arguments:
         K: Number of topics
@@ -122,7 +122,7 @@ class OnlineLDA:
 
         # Initialize the variational distribution q(beta|lambda)
         self._lambda = 1*n.random.gamma(100., 1./100., (self._K, self._W))
-        self._Elogbeta = dirichlet_expectation(self._lambda)
+        self._Elogbeta = dirichlet_expectation(self._lambda) / t0
         self._expElogbeta = n.exp(self._Elogbeta)
 
         # TODO: Mayeb need to initialize it with the initial temperature ? 
@@ -156,7 +156,7 @@ class OnlineLDA:
         # the mini-batch
 
         gamma = 1*n.random.gamma(100., 1./100., (batchD, self._K))
-        Elogtheta = dirichlet_expectation(gamma) 
+        Elogtheta = dirichlet_expectation(gamma) / temp
         expElogtheta = n.exp(Elogtheta)
 
         sstats = n.zeros(self._lambda.shape)
@@ -168,10 +168,17 @@ class OnlineLDA:
             ids = wordids[d]
             cts = wordcts[d]
             gammad = gamma[d, :]
+
             # TODO: Divide by T_i at the beginning //Does this mess up normalization ?
-            Elogthetad = Elogtheta[d, :] 
-            expElogthetad = n.power(expElogtheta[d, :], 1./temp)
-            expElogbetad  = n.power(self._expElogbeta[:, ids], 1./temp)
+            Elogthetad = Elogtheta[d, :]
+            expElogthetad = expElogtheta[d,:]
+            expElogbetad  = self._expElogbeta[:, ids]
+
+#            print expElogbetad
+#            print sum(expElogbetad)
+#            print expElogthetad
+#            print sum(expElogthetad)
+#            raw_input()
 
             # The optimal phi_{dwk} is proportional to 
             # expElogthetad_k * expElogbetad_w. phinorm is the normalizer.
@@ -184,10 +191,14 @@ class OnlineLDA:
                 # the update for gamma gives this update. Cf. Lee&Seung 2001.
                 gammad = self._alpha + expElogthetad * \
                     n.dot(cts / phinorm, expElogbetad.T)
-                gammad = (gammad / temp) + (1. - (1./temp)) #TODO: Add temp scale for gammad
-                Elogthetad = dirichlet_expectation(gammad)
+
+                #TODO: Add temp scale for gammad
+                gammad = (gammad / temp) + (1. - (1./temp))
+
+                Elogthetad = dirichlet_expectation(gammad) / temp
                 expElogthetad = n.exp(Elogthetad)
                 phinorm = n.dot(expElogthetad, expElogbetad) + 1e-100
+
                 # If gamma hasn't changed much, we're done.
                 meanchange = n.mean(abs(gammad - lastgamma))
                 if (meanchange < meanchangethresh):
@@ -241,7 +252,7 @@ class OnlineLDA:
         self._lambda = self._lambda * (1-(rhot*temp)) + \
             rhot * (self._eta + self._D * sstats / len(docs)) * (1./temp)
        
-        self._Elogbeta = dirichlet_expectation(self._lambda)
+        self._Elogbeta = dirichlet_expectation(self._lambda) / temp
         self._expElogbeta = n.exp(self._Elogbeta)
         self._updatect += 1
 

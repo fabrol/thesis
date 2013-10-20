@@ -22,6 +22,7 @@ import cPickle, string, numpy, getopt, sys, random, time, re, pprint
 
 import onlineldavb
 import wikirandom
+import getsubsample
 
 def main():
     """
@@ -30,7 +31,7 @@ def main():
     """
 
     # The number of documents to analyze each iteration
-    batchsize = 64
+    batchsize = 20
     # The total number of documents in Wikipedia
     D = 3.3e6
     # The number of topics
@@ -42,6 +43,12 @@ def main():
     else:
         documentstoanalyze = int(sys.argv[1])
 
+    documentstoanalyze = 100
+
+    # Initialize the subsampler
+    getsubsample.init_subsample()
+
+
     # Our vocabulary
     vocab = file('./dictnostops.txt').readlines()
     W = len(vocab)
@@ -52,8 +59,11 @@ def main():
     # sooner than this.)
     for iteration in range(0, documentstoanalyze):
         # Download some articles
-        (docset, articlenames) = \
-            wikirandom.get_random_wikipedia_articles(batchsize)
+#        (docset, articlenames) = \
+#            wikirandom.get_random_wikipedia_articles(batchsize)
+
+        docset = getsubsample.get_subsample(batchsize)
+
         # Give them to online LDA
         (gamma, bound) = olda.update_lambda(docset)
         # Compute an estimate of held-out perplexity

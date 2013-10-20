@@ -23,6 +23,7 @@ import cPickle, string, numpy, getopt, sys, random, time, re, pprint
 import onlineldavb
 import wikirandom
 import temp_gen
+import getsubsample
 
 def main():
     """
@@ -31,7 +32,7 @@ def main():
     """
 
     # The number of documents to analyze each iteration
-    batchsize = 2
+    batchsize = 20
     # The total number of documents in Wikipedia
     D = 3.3e6
     # The number of topics
@@ -48,10 +49,14 @@ def main():
     W = len(vocab)
 
     # Set a cooling schedule
-    sched = temp_gen.constant_sched(100, 10)
+    t0 = 10
+    sched = temp_gen.constant_sched_trailing(t0, 100)
+#    sched = [1] * 100
+    # Initialize the algorithm with alpha=1/K, eta=1/K, tau_0=1024, kappa=0.7
+    olda = onlineldavb.OnlineLDA(vocab, K, D, 1./K, 1./K, 1024., 0.7, t0)
 
-    # Initialize the algorithm with alpha=1/K, eta=1/K, tau_0=1024, kappa=0.7, t_sched = (1000, 1)
-    olda = onlineldavb.OnlineLDA(vocab, K, D, 1./K, 1./K, 1024., 0.7)
+    # Initialize the subsampler
+    getsubsample.init_subsample()
 
     '''
     # Run until we've seen D documents. (Feel free to interrupt *much*
@@ -77,14 +82,12 @@ def main():
             numpy.savetxt('lambda-%d.dat' % iteration, olda._lambda)
             numpy.savetxt('gamma-%d.dat' % iteration, gamma)
     '''
-    for i in sched:
-      print i, " "
 
     # We should run until the temperature decreases to 1. 
     for iteration in range(0, len(sched)):
-        # Download some articles
-        (docset, articlenames) = \
-            wikirandom.get_random_wikipedia_articles(batchsize)
+        # Get some articles
+        docset = getsubsample.get_subsample(batchsize)
+        
         # Give them to online LDA with current temp
         (gamma, bound) = olda.update_lambda(docset, sched[iteration])
         # Compute an estimate of held-out perplexity

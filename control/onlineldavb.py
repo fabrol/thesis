@@ -167,6 +167,13 @@ class OnlineLDA:
             Elogthetad = Elogtheta[d, :]
             expElogthetad = expElogtheta[d, :]
             expElogbetad = self._expElogbeta[:, ids]
+
+#            print expElogbetad
+#            print sum(expElogbetad)
+#            print Elogthetad
+#            print sum(expElogthetad)
+#            raw_input()
+            
             # The optimal phi_{dwk} is proportional to 
             # expElogthetad_k * expElogbetad_w. phinorm is the normalizer.
             phinorm = n.dot(expElogthetad, expElogbetad) + 1e-100
