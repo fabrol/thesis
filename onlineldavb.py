@@ -31,6 +31,29 @@ def dirichlet_expectation(alpha):
         return(psi(alpha) - psi(n.sum(alpha)))
     return(psi(alpha) - psi(n.sum(alpha, 1))[:, n.newaxis])
 
+def parse_dat_list(docs, vocab):
+  """
+  Takes in D docs in the lda-c format and the overall vocab.
+  Returns the same format as parse_doc_list
+  """
+  wordids = list()
+  wordcts = list()
+
+  D = len(docs)
+  for d in range(0,D):
+    doc = docs[d].split(' ')[1:]
+    ddict = dict()
+    #import pdb; pdb.set_trace()
+    for entry in doc:
+      wordtoken, count = map(int, entry.split(':'))
+      if not wordtoken in ddict:
+        ddict[wordtoken] = count
+      else:
+        ddict[wordtoken] += count
+    wordids.append(ddict.keys())
+    wordcts.append(ddict.values())
+  return((wordids, wordcts))
+
 def parse_doc_list(docs, vocab):
     """
     Parse a document into a list of word ids and a list of counts,
@@ -78,7 +101,6 @@ def parse_doc_list(docs, vocab):
                 ddict[wordtoken] += 1
         wordids.append(ddict.keys())
         wordcts.append(ddict.values())
-
     return((wordids, wordcts))
 
 class OnlineLDA:
@@ -107,10 +129,10 @@ class OnlineLDA:
         """
         self._vocab = dict()
         for word in vocab:
-            word = word.lower()
-            word = re.sub(r'[^a-z]', '', word)
+            word = word.strip()
             self._vocab[word] = len(self._vocab)
-
+#        print self._vocab
+#        print len(self._vocab)
         self._K = K
         self._W = len(self._vocab)
         self._D = D
@@ -119,6 +141,9 @@ class OnlineLDA:
         self._tau0 = tau0 + 1
         self._kappa = kappa
         self._updatect = 0
+
+        # Constant rhot
+        self._rhot = pow(self._tau0 + self._updatect, -self._kappa)
 
         # Initialize the variational distribution q(beta|lambda)
         self._lambda = 1*n.random.gamma(100., 1./100., (self._K, self._W))
@@ -148,8 +173,7 @@ class OnlineLDA:
             temp = list()
             temp.append(docs)
             docs = temp
-
-        (wordids, wordcts) = parse_doc_list(docs, self._vocab)
+        (wordids, wordcts) = parse_dat_list(docs, self._vocab)
         batchD = len(docs)
 
         # Initialize the variational distribution q(theta|gamma) for
@@ -239,15 +263,15 @@ class OnlineLDA:
 
         # rhot will be between 0 and 1, and says how much to weight
         # the information we got from this mini-batch.
-        rhot = pow(self._tau0 + self._updatect, -self._kappa)
-        self._rhot = rhot
+#        rhot = pow(self._tau0 + self._updatect, -self._kappa)
+#        self._rhot = rhot
+        rhot = self._rhot
         # Do an E step to update gamma, phi | lambda for this
         # mini-batch. This also returns the information about phi that
         # we need to update lambda.
         (gamma, sstats) = self.do_e_step(docs, temp)
         # Estimate held-out likelihood for current values of lambda.
         bound = self.approx_bound(docs, gamma)
-
         # Update lambda based on documents.
         self._lambda = self._lambda * (1-(rhot*temp)) + \
             rhot * (self._eta + self._D * sstats / len(docs)) * (1./temp)
@@ -276,7 +300,7 @@ class OnlineLDA:
             temp.append(docs)
             docs = temp
 
-        (wordids, wordcts) = parse_doc_list(docs, self._vocab)
+        (wordids, wordcts) = parse_dat_list(docs, self._vocab)
         batchD = len(docs)
 
         score = 0

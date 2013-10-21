@@ -32,11 +32,13 @@ def main():
     """
 
     # The number of documents to analyze each iteration
-    batchsize = 20
+    batchsize = 40
     # The total number of documents in Wikipedia
     D = 3.3e6
     # The number of topics
-    K = 100
+    K = 200
+
+    # More topics (250), less batch size (100), constant learning rate
 
     # How many documents to look at
     if (len(sys.argv) < 2):
@@ -45,11 +47,11 @@ def main():
         documentstoanalyze = int(sys.argv[1])
 
     # Our vocabulary
-    vocab = file('./dictnostops.txt').readlines()
+    vocab = file('./ALL/VOCAB-TFIDF-1000.dat').readlines()
     W = len(vocab)
 
     # Set a cooling schedule
-    t0 = 10
+    t0 = 5
     sched = temp_gen.constant_sched_trailing(t0, 100)
 #    sched = [1] * 100
     # Initialize the algorithm with alpha=1/K, eta=1/K, tau_0=1024, kappa=0.7
@@ -87,12 +89,15 @@ def main():
     for iteration in range(0, len(sched)):
         # Get some articles
         docset = getsubsample.get_subsample(batchsize)
-        
         # Give them to online LDA with current temp
         (gamma, bound) = olda.update_lambda(docset, sched[iteration])
+        
         # Compute an estimate of held-out perplexity
-        (wordids, wordcts) = onlineldavb.parse_doc_list(docset, olda._vocab)
-        perwordbound = bound * len(docset) / (D * sum(map(sum, wordcts)))
+        # Get new sample and use that for testing the log likelihood
+        docset_c = getsubsample.get_subsample(batchsize)
+        (wordids, wordcts) = onlineldavb.parse_dat_list(docset_c, olda._vocab)
+        perwordbound = bound * len(docset_c) / (D * sum(map(sum, wordcts)))
+        
         print '%d:  rho_t = %f,  held-out perplexity estimate = %f, temp = %f' % \
             (iteration, olda._rhot, numpy.exp(-perwordbound), sched[iteration])
 

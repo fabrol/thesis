@@ -3,13 +3,12 @@ import random,nltk,string
 docs = []
 def init_subsample():
   #stop_words = [v.strip() for v in file('stop_words.txt').readlines()]
-  f = open('ap.txt', 'r')
+  f = open('./ALL/documents.dat', 'r')
   for line in f:
-    if line[0] == '<' or line[1] == '<':
-      continue
-    else:
+    line = line.strip()
+    if line:
       docs.append(line)
-
+      
 def get_subsample(n):
   rand_smpl = [ docs[i] for i in random.sample(xrange(len(docs)), n) ]
   return rand_smpl
