@@ -32,7 +32,7 @@ def main():
     """
 
     # The number of documents to analyze each iteration
-    batchsize = 300
+    batchsize = 100
     # The total number of documents in Wikipedia
     D = 3.3e6
     # The number of topics
@@ -52,7 +52,7 @@ def main():
 
     # Set a cooling schedule
     t0 = 3
-    sched = temp_gen.constant_sched(t0, 100)
+    sched = temp_gen.constant_sched(t0, 200)
 #    sched = [1] * 100
     # Initialize the algorithm with alpha=1/K, eta=1/K, tau_0=1024, kappa=0.5
     olda = onlineldavb.OnlineLDA(vocab, K, D, 1./K, 1./K, 1024., 0.5, t0)
@@ -90,7 +90,7 @@ def main():
           c_test_word_count_split += count
 
         print '%d:  rho_t = %f, held-out perplexity estimate = %f, temp = %f, test_score_split = %f' % \
-(iteration, olda._rhot, numpy.exp(-perwordbound), sched[iteration], test_score_split)
+(iteration, olda._rhot, numpy.exp(-perwordbound), sched[iteration], test_score_split / c_test_word_count_split)
 
         # Save lambda, the parameters to the variational distributions
         # over topics, and gamma, the parameters to the variational
