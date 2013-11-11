@@ -31,6 +31,25 @@ def dirichlet_expectation(alpha):
         return(psi(alpha) - psi(n.sum(alpha)))
     return(psi(alpha) - psi(n.sum(alpha, 1))[:, n.newaxis])
 
+def parse_doc(doc, vocab):
+  """
+  Takes in 1 doc in the lda-c format and the overall vocab.
+  Returns the same format as parse_doc_list
+  """
+  wordids = list()
+  wordcts = list()
+  doc = doc.split(' ')[1:]
+  ddict = dict()
+  for entry in doc:
+    wordtoken, count = map(int, entry.split(':'))
+    if not wordtoken in ddict:
+      ddict[wordtoken] = count
+    else:
+      ddict[wordtoken] += count
+  wordids.append(ddict.keys())
+  wordcts.append(ddict.values())
+  return((wordids, wordcts))
+
 def parse_dat_list(docs, vocab):
   """
   Takes in D docs in the lda-c format and the overall vocab.
@@ -45,11 +64,12 @@ def parse_dat_list(docs, vocab):
     ddict = dict()
     #import pdb; pdb.set_trace()
     for entry in doc:
-      wordtoken, count = map(int, entry.split(':'))
-      if not wordtoken in ddict:
-        ddict[wordtoken] = count
-      else:
-        ddict[wordtoken] += count
+      if entry != '':
+        wordtoken, count = map(int, entry.split(':'))
+        if not wordtoken in ddict:
+          ddict[wordtoken] = count
+        else:
+          ddict[wordtoken] += count
     wordids.append(ddict.keys())
     wordcts.append(ddict.values())
   return((wordids, wordcts))
@@ -180,7 +200,7 @@ class OnlineLDA:
         # the mini-batch
 
         gamma = 1*n.random.gamma(100., 1./100., (batchD, self._K))
-        Elogtheta = dirichlet_expectation(gamma) / temp
+        Elogtheta = dirichlet_expectation(gamma)
         expElogtheta = n.exp(Elogtheta)
 
         sstats = n.zeros(self._lambda.shape)
@@ -194,8 +214,8 @@ class OnlineLDA:
             gammad = gamma[d, :]
 
             # TODO: Divide by T_i at the beginning //Does this mess up normalization ?
-            Elogthetad = Elogtheta[d, :]
-            expElogthetad = expElogtheta[d,:]
+            Elogthetad = Elogtheta[d, :] / temp
+            expElogthetad = n.power(expElogtheta[d,:], 1./temp)
             expElogbetad  = self._expElogbeta[:, ids]
 
 #            print expElogbetad
@@ -307,7 +327,7 @@ class OnlineLDA:
         Elogtheta = dirichlet_expectation(gamma)
         expElogtheta = n.exp(Elogtheta)
 
-        # E[log p(docs | theta, beta)]
+        # E[log p(docs | theta, beta)]  
         for d in range(0, batchD):
             gammad = gamma[d, :]
             ids = wordids[d]
@@ -339,3 +359,43 @@ class OnlineLDA:
                               gammaln(n.sum(self._lambda, 1)))
 
         return(score)
+    
+    def lda_e_step_split(self, wordids, wordcts, max_iter=100):
+      half_len = int(len(wordcts[0])/2) + 1
+      idx_train = [2*i for i in range(half_len) if 2*i < len(wordcts[0])]
+      idx_test = [2*i+1 for i in range(half_len) if 2*i+1 < len(wordcts[0])]
+
+      alpha = self._alpha
+      beta  = self._expElogbeta
+     # split the document
+      words_train = [wordids[0][i] for i in idx_train]
+      counts_train = [wordcts[0][i] for i in idx_train]
+      words_test = [wordids[0][i] for i in idx_test]
+      counts_test = [wordcts[0][i] for i in idx_test]
+
+      gamma = n.ones(self._K) 
+  #    gamma = 1*n.random.gamma(100., 1./100., (self._K))
+
+      expElogtheta = n.exp(dirichlet_expectation(gamma)) 
+      betad = beta[:, words_train]
+      phinorm = n.dot(expElogtheta, betad) + 1e-100 
+      counts = n.array(counts_train)
+      iter = 0
+      while iter < max_iter:
+          lastgamma = gamma
+          iter += 1
+          gamma = alpha + expElogtheta * n.dot(counts/phinorm,  betad.T)
+          Elogtheta = dirichlet_expectation(gamma)
+          expElogtheta = n.exp(Elogtheta)
+          phinorm = n.dot(expElogtheta, betad) + 1e-100
+          meanchange = n.mean(abs(gamma-lastgamma))
+          if (meanchange < meanchangethresh):
+              break
+
+      gamma = gamma/n.sum(gamma)
+      counts = n.array(counts_test)
+      betad = beta[:, words_test]
+      score = n.sum(counts * n.log(n.dot(gamma, betad) + 1e-100))
+
+      return (score, n.sum(counts), gamma)
+

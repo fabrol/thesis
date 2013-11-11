@@ -31,7 +31,6 @@ def main():
     """
     vocab = str.split(file(sys.argv[1]).read())
     testlambda = numpy.loadtxt(sys.argv[2])
-
     for k in range(0, len(testlambda)):
         lambdak = list(testlambda[k, :])
         lambdak = lambdak / sum(lambdak)
