@@ -13,3 +13,9 @@ With temp = 10, starts with perplex ~ 10. It goes up at the end. In the implemen
 If temp is too high (~ 10), the perplex blows up very quickly to inf.
 
 Add implementation of the estimation measure from the paper
+
+
+Current observations - 
+  The value of the held-out predictive probability goes up instead of down which is very strange. The measure seems to be correct since with temp = 1, it does decrease.
+  The topics created by any t > 1 seem to all have the same words in it... Maybe it'll change with more iterations ? 
+	If we set rho_t to 1, then the lambda update has arbitrary weights b/c of temp. This brings up the point that since the lambda update has T*rho_t, we need the T to be small enough so that it doesn't make the weight of the last lambda become negative (this is why T~10 goes crazy). At the same time if we set rho_t = 1, then we need a way to normalize the temperature weighting, wich is hard because it appears multiplied in the first term and divided in the second

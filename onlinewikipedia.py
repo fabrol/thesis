@@ -33,18 +33,13 @@ def main():
 
     # The number of documents to analyze each iteration
     batchsize = 100
-    # The total number of documents in Wikipedia
-    D = 3.3e6
     # The number of topics
     K = 200
 
     # More topics (250), less batch size (100), constant learning rate
 
     # How many documents to look at
-    if (len(sys.argv) < 2):
-        documentstoanalyze = int(D/batchsize)
-    else:
-        documentstoanalyze = int(sys.argv[1])
+    D = 140000
 
     # Our vocabulary
     vocab = file('./ALL/VOCAB-TFIDF-1000.dat').readlines()
@@ -52,7 +47,7 @@ def main():
 
     # Set a cooling schedule
     t0 = 3
-    sched = temp_gen.constant_sched(t0, 200)
+    sched = temp_gen.constant_sched(t0, 101)
 #    sched = [1] * 100
     # Initialize the algorithm with alpha=1/K, eta=1/K, tau_0=1024, kappa=0.5
     olda = onlineldavb.OnlineLDA(vocab, K, D, 1./K, 1./K, 1024., 0.5, t0)

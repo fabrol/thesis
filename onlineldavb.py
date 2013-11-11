@@ -164,10 +164,11 @@ class OnlineLDA:
 
         # Constant rhot
         self._rhot = pow(self._tau0 + self._updatect, -self._kappa)
+#        self._rhot = 1
 
         # Initialize the variational distribution q(beta|lambda)
         self._lambda = 1*n.random.gamma(100., 1./100., (self._K, self._W))
-        self._Elogbeta = dirichlet_expectation(self._lambda) / t0
+        self._Elogbeta = dirichlet_expectation(self._lambda)
         self._expElogbeta = n.exp(self._Elogbeta)
 
         # TODO: Mayeb need to initialize it with the initial temperature ? 
@@ -216,7 +217,7 @@ class OnlineLDA:
             # TODO: Divide by T_i at the beginning //Does this mess up normalization ?
             Elogthetad = Elogtheta[d, :] / temp
             expElogthetad = n.power(expElogtheta[d,:], 1./temp)
-            expElogbetad  = self._expElogbeta[:, ids]
+            expElogbetad  = n.power(self._expElogbeta[:, ids], 1./temp)
 
 #            print expElogbetad
 #            print sum(expElogbetad)
@@ -283,9 +284,9 @@ class OnlineLDA:
 
         # rhot will be between 0 and 1, and says how much to weight
         # the information we got from this mini-batch.
-#        rhot = pow(self._tau0 + self._updatect, -self._kappa)
-#        self._rhot = rhot
-        rhot = self._rhot
+        rhot = pow(self._tau0 + self._updatect, -self._kappa)
+        self._rhot = rhot
+#        rhot = self._rhot
         # Do an E step to update gamma, phi | lambda for this
         # mini-batch. This also returns the information about phi that
         # we need to update lambda.
@@ -293,10 +294,10 @@ class OnlineLDA:
         # Estimate held-out likelihood for current values of lambda.
         bound = self.approx_bound(docs, gamma)
         # Update lambda based on documents.
-        self._lambda = self._lambda * (1-(rhot*temp)) + \
+        self._lambda = self._lambda * (1-(rhot)) + \
             rhot * (self._eta + self._D * sstats / len(docs)) * (1./temp)
        
-        self._Elogbeta = dirichlet_expectation(self._lambda) / temp
+        self._Elogbeta = dirichlet_expectation(self._lambda)
         self._expElogbeta = n.exp(self._Elogbeta)
         self._updatect += 1
 
