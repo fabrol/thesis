@@ -1,0 +1,3 @@
+use the same docset and run the non-annealed and annealed version
+
+Somehow it seems to always start increasing right before we hit the T=1. Maybe we need to do longer in that range right before it ??? There is a jump between going to temp = 1

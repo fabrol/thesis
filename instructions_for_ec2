@@ -1,0 +1,4 @@
+upload all the files to the instance using
+scp -i thesis.pem ec2-user@ec2-54-201-96-55.us-west-2.compute.amazonaws.com:~
+
+Proceed to enjoy

@@ -1,0 +1,27 @@
+LDA:
+
+lambda_k : topic dir params
+phi_nd : assignmentts params for doc d word n
+gamma_d : dir params for doc d
+
+
+
+E step:
+  1. Compute gamma_d*
+  2. compute phi_dn*
+
+M step:
+  lambda = alpha + sum_d sum_n (phi_dn * w_dn)
+
+
+1. lambda = eta
+
+2. For each document (N):
+    a: Set phi_dn = 1/K
+    b: compute gamma_d* = alpha + N/K
+    c: compute phi_dn* ~ exp{E log theta + E log beta} // UNIFORM !!
+    d: sample from z ~ phi_dn*
+    e: update lambda = lambda + sum_n (z_dn*w_dn)
+        recompute E log beta 
+
+3. Scale alpha appropriate to data set size
