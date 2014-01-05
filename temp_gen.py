@@ -9,5 +9,6 @@ def constant_sched (T0, length):
 
 def constant_sched_trailing(T0, length):
   A = numpy.linspace(T0,1,length)
-  numpy.append(A, [1]*(length/10))
+  A = numpy.append(A, [1.]*20)
+  #numpy.append(A, [1]*(length/10))
   return A
